@@ -4,47 +4,49 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
-// // Create and Deploy Your First Cloud Functions
-// // https://firebase.google.com/docs/functions/write-firebase-functions
-//
-exports.helloWorld = functions.https.onRequest((req, res) => {
-  res.send("Hello from Firebase!");
-});
+const express = require("express");
+const app = express();
 
-exports.getPosts = functions.https.onRequest((req, res) => {
+app.get("/posts", (req, res) => {
   admin
     .firestore()
     .collection("posts")
+    .orderBy('createdAt', 'desc')
     .get()
     .then(data => {
       let posts = [];
       data.forEach(doc => {
-        posts.push(doc.data());
+        posts.push({
+          postId: doc.id,
+          body: doc.data().body,
+          username: doc.data().username,
+          createdAt: doc.data().createdAt
+        });
       });
       return res.json(posts);
     })
     .catch(err => console.error(err));
 });
 
-exports.createPosts = functions.https.onRequest((req, res) => {
-  if (req.method !== 'POST') {
-    return res.status(400).json({ error: 'Method not allowed'}); 
-  }
+  app.post('/post', (req, res) => {
   const newPost = {
     body: req.body.body,
     username: req.body.username,
-    createdAt: admin.firestore.Timestamp.fromDate(new Date())
+    createdAt: new Date().toISOString()
   };
-  admin.firestore()
+  admin
+    .firestore()
     .collection("posts")
     .add(newPost)
     .then(doc => {
-      res.json({ message: `document ${doc.id} created succesfully`});
+      res.json({ message: `document ${doc.id} created succesfully` });
     })
     .catch(err => {
       res.status(500).json({
-        error: 'Sorry, something went wrong.',
-      })
+        error: "Sorry, something went wrong."
+      });
       console.error(err);
     });
 });
+
+exports.api = functions.https.onRequest(app);
