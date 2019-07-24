@@ -40,10 +40,45 @@ app.get("/posts", (req, res) => {
     .catch(err => console.error(err));
 });
 
-app.post("/post", (req, res) => {
+// Routes token middleware
+const FBAuth = (req, res, next) => {
+  let idToken;
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
+    idToken = req.headers.authorization.split("Bearer ")[1];
+  } else {
+    console.error("No token found");
+    return res.status(403).json({ error: "Unauthorized!" });
+  }
+
+  admin
+    .auth()
+    .verifyIdToken(idToken)
+    .then(decodedToken => {
+      req.user = decodedToken;
+      console.log(decodedToken);
+      return db
+        .collection("users")
+        .where("U serId", "==", req.user.uid)
+        .limit(1)
+        .get();
+    })
+    .then(data => {
+      req.user.username = data.docs[0].data().username;
+      return next();
+    })
+    .catch(err => {
+      console.error("Error while verifying token", err);
+      return res.status(403).json(err);
+    });
+};
+
+app.post("/post", FBAuth, (req, res) => {
   const newPost = {
     body: req.body.body,
-    username: req.body.username,
+    username: req.user.username,
     createdAt: new Date().toISOString()
   };
   db.collection("posts")
@@ -174,11 +209,16 @@ app.post("/login", (req, res) => {
     })
     .catch(err => {
       console.error(err);
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-email') {
-        return res.status(403).json({general: 'Wrong Credentials, please try again'})
+      if (
+        err.code === "auth/wrong-password" ||
+        err.code === "auth/invalid-email"
+      ) {
+        return res
+          .status(403)
+          .json({ general: "Wrong Credentials, please try again" });
       } else {
         return res.status(500).json({ error: err.code });
-      }   
+      }
     });
 });
 
