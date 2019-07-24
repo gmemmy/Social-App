@@ -1,17 +1,27 @@
 /* eslint-disable promise/always-return */
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-
+const app = require("express")();
 admin.initializeApp();
 
-const express = require("express");
-const app = express();
+const config = {
+  apiKey: "AIzaSyDDg3RKbCriCpgYg8H4IJfDYklU6m7Ep_4",
+  authDomain: "social-app-d3eeb.firebaseapp.com",
+  databaseURL: "https://social-app-d3eeb.firebaseio.com",
+  projectId: "social-app-d3eeb",
+  storageBucket: "social-app-d3eeb.appspot.com",
+  messagingSenderId: "124783971440",
+  appId: "1:124783971440:web:8565143d9bba0a74"
+};
+
+const firebase = require("firebase");
+firebase.initializeApp(config);
+
+const db = admin.firestore();
 
 app.get("/posts", (req, res) => {
-  admin
-    .firestore()
-    .collection("posts")
-    .orderBy('createdAt', 'desc')
+  db.collection("posts")
+    .orderBy("createdAt", "desc")
     .get()
     .then(data => {
       let posts = [];
@@ -28,15 +38,13 @@ app.get("/posts", (req, res) => {
     .catch(err => console.error(err));
 });
 
-  app.post('/post', (req, res) => {
+app.post("/post", (req, res) => {
   const newPost = {
     body: req.body.body,
     username: req.body.username,
     createdAt: new Date().toISOString()
   };
-  admin
-    .firestore()
-    .collection("posts")
+  db.collection("posts")
     .add(newPost)
     .then(doc => {
       res.json({ message: `document ${doc.id} created succesfully` });
@@ -46,6 +54,46 @@ app.get("/posts", (req, res) => {
         error: "Sorry, something went wrong."
       });
       console.error(err);
+    });
+});
+
+// Signup route
+app.post("/signup", (req, res) => {
+  const { email, password, confirmPassword, username } = req.body;
+  const newUser = {
+    email: email,
+    password: password,
+    confirmPassword: confirmPassword,
+    username: username
+  };
+
+  // TODO validate data
+  db.doc(`/users/${newUser.username}`)
+    .get()
+    .then(doc => {
+      if (doc.exists) {
+        return res
+          .status(400)
+          .json({ username: "This username is already taken" });
+      } else {
+        return firebase
+          .auth()
+          .createUserWithEmailAndPassword(newUser.email, newUser.password);
+      }
+    })
+    .then(data => {
+      return data.user.getIdToken();
+    })
+    .then(token => {
+      return res.status(201).json({ token });
+    })
+    .catch(err => {
+      console.error(err);
+      if (err.code === 'auth/email-already-in-use') {
+        return res.status(400).json({ email: 'Email is already in use' })
+      } else {
+        return res.status(500).json({ error: err.code }); 
+      }   
     });
 });
 
