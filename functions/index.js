@@ -1,3 +1,4 @@
+/* eslint-disable consistent-return */
 /* eslint-disable no-useless-escape */
 /* eslint-disable promise/always-return */
 const functions = require("firebase-functions");
@@ -71,6 +72,7 @@ const isEmpty = string => {
 };
 
 // Signup route
+// eslint-disable-next-line consistent-return
 app.post("/signup", (req, res) => {
   const { email, password, confirmPassword, username } = req.body;
   const newUser = {
@@ -140,6 +142,43 @@ app.post("/signup", (req, res) => {
       } else {
         return res.status(500).json({ error: err.code });
       }
+    });
+});
+
+app.post("/login", (req, res) => {
+  const user = {
+    email: req.body.email,
+    password: req.body.password
+  };
+  let errors = {};
+
+  if (isEmpty(user.email)) {
+    errors.email = "Must not be empty";
+  }
+  if (isEmpty(user.password)) {
+    errors.password = "Must not be empty";
+  }
+
+  if (Object.keys(errors).keys.length > 0) {
+    return res.status(400).json({ errors });
+  }
+
+  firebase
+    .auth()
+    .signInWithEmailAndPassword(user.email, user.password)
+    .then(data => {
+      return data.user.getIdToken();
+    })
+    .then(token => {
+      return res.json({ token });
+    })
+    .catch(err => {
+      console.error(err);
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-email') {
+        return res.status(403).json({general: 'Wrong Credentials, please try again'})
+      } else {
+        return res.status(500).json({ error: err.code });
+      }   
     });
 });
 
