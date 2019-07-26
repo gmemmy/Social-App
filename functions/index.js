@@ -11,13 +11,15 @@ const {
   signUp,
   login,
   uploadImage,
-  addUserDetails
+  addUserDetails,
+  getAuthenticatedUser
 } = require("./handlers/users");
 
 // Post routes
 app.get("/posts", getAllPosts);
 app.post("/post", FBAuth, makeANewPost);
 app.post("/user", FBAuth, addUserDetails);
+app.get("/user", FBAuth, getAuthenticatedUser);
 
 // Authentication route
 app.post("/signup", signUp);

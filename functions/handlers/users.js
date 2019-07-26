@@ -1,3 +1,4 @@
+/* eslint-disable promise/always-return */
 /* eslint-disable consistent-return */
 const { admin, db } = require("../util/admin");
 const { config } = require("../util/config");
@@ -111,6 +112,34 @@ exports.addUserDetails = (req, res) => {
     .update(userDetails)
     .then(() => {
       return res.json({ message: "Details added successfully" });
+    })
+    .catch(err => {
+      console.error(err);
+      return res.status(500).json({ error: err.code });
+    });
+};
+
+// Get own user details
+exports.getAuthenticatedUser = (req, res) => {
+  let userData = {};
+
+  db.doc(`/users/${req.user.username}`)
+    .get()
+    .then(doc => {
+      if (doc.exists) {
+        userData.credentials = doc.data();
+        return db
+          .collection("likes")
+          .where("username", "==", req.user.username)
+          .get();
+      }
+    })
+    .then(data => {
+      userData.likes = [];
+      data.forEach(doc => {
+        userData.likes.push(doc.data());
+      });
+      return res.json(userData);
     })
     .catch(err => {
       console.error(err);
