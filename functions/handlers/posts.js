@@ -1,3 +1,4 @@
+/* eslint-disable consistent-return */
 const { db } = require("../util/admin");
 
 exports.getAllPosts = (req, res) => {
@@ -49,6 +50,35 @@ exports.getOnePost = (req, res) => {
     .catch(err => {
       console.error(err);
       res.status(500).json({ error: err.code });
+    });
+};
+
+exports.commentOnPost = (req, res) => {
+  if (req.body.body.trim() === "")
+    return res.status(400).json({ error: "Must not be empty" });
+
+  const newComment = {
+    body: req.body.body,
+    createdAt: new Date().toISOString(),
+    postId: req.params.postId,
+    username: req.user.username,
+    userImage: req.user.imageUrl
+  };
+
+  db.doc(`/posts/${req.params.postId}`)
+    .get()
+    .then(doc => {
+      if (!doc.exists) {
+        return res.status(400).json({ error: "Post not found" });
+      }
+      return db.collection("comments").add(newComment);
+    })
+    .then(() => {
+      return res.json(newComment);
+    })
+    .catch(err => {
+      console.error(err);
+      return res.status(500).json({ error: "Something went wrong" });
     });
 };
 
