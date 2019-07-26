@@ -5,8 +5,13 @@ const { config } = require("../util/config");
 const firebase = require("firebase");
 firebase.initializeApp(config);
 
-const { validateSignup, validateLogin } = require("../util/validator");
+const {
+  validateSignup,
+  validateLogin,
+  reduceUserDetails
+} = require("../util/validator");
 
+// Sign Up user
 exports.signUp = (req, res) => {
   const { email, password, confirmPassword, username } = req.body;
   const newUser = {
@@ -65,6 +70,7 @@ exports.signUp = (req, res) => {
     });
 };
 
+// Log user in
 exports.login = (req, res) => {
   const user = {
     email: req.body.email,
@@ -97,6 +103,22 @@ exports.login = (req, res) => {
     });
 };
 
+// Add user details
+exports.addUserDetails = (req, res) => {
+  let userDetails = reduceUserDetails(req.body);
+
+  db.doc(`/users/${req.user.username}`)
+    .update(userDetails)
+    .then(() => {
+      return res.json({ message: "Details added successfully" });
+    })
+    .catch(err => {
+      console.error(err);
+      return res.status(500).json({ error: err.code });
+    });
+};
+
+// Upload a profile image
 exports.uploadImage = (req, res) => {
   const BusBoy = require("busboy");
   const path = require("path");
@@ -111,7 +133,7 @@ exports.uploadImage = (req, res) => {
   busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
     if (mimetype !== "image/jpeg" && mimetype !== "image/png") {
       return res.status(400).json({ error: "Wrong file type submitted!" });
-    } 
+    }
     const imageExtension = filename.split(".")[filename.split(".").length - 1];
     imageFileName = `${Math.round(Math.random() * 10000000)}.${imageExtension}`;
     const filePath = path.join(os.tmpdir(), imageFileName);
