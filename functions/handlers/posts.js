@@ -1,4 +1,4 @@
-const { db } = require('../util/admin');
+const { db } = require("../util/admin");
 
 exports.getAllPosts = (req, res) => {
   db.collection("posts")
@@ -20,7 +20,37 @@ exports.getAllPosts = (req, res) => {
       console.error(err);
       res.status(500).json({ error: err.code });
     });
-  }
+};
+
+exports.getOnePost = (req, res) => {
+  let postData = {};
+
+  db.doc(`/posts/${req.params.postId}`)
+    .get()
+    .then(doc => {
+      if (!doc.exists) {
+        return res.status(400).json({ error: "Post not found" });
+      }
+      postData = doc.data();
+      postData.postId = doc.id;
+      return db
+        .collection("comments")
+        .orderBy("createdAt", "desc")
+        .where("postId", "==", req.params.postId)
+        .get();
+    })
+    .then(data => {
+      postData.comments = [];
+      data.forEach(doc => {
+        postData.comments.push(doc.data());
+      });
+      return res.json(postData);
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: err.code });
+    });
+};
 
 exports.makeANewPost = (req, res) => {
   const newPost = {
@@ -39,4 +69,4 @@ exports.makeANewPost = (req, res) => {
       });
       console.error(err);
     });
-}
+};

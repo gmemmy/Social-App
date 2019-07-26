@@ -6,7 +6,7 @@ const functions = require("firebase-functions");
 const app = require("express")();
 const FBAuth = require("./util/fbAuth");
 
-const { getAllPosts, makeANewPost } = require("./handlers/posts");
+const { getAllPosts, getOnePost, makeANewPost } = require("./handlers/posts");
 const {
   signUp,
   login,
@@ -17,13 +17,14 @@ const {
 
 // Post routes
 app.get("/posts", getAllPosts);
+app.get("/posts/:postId", getOnePost);
 app.post("/post", FBAuth, makeANewPost);
-app.post("/user", FBAuth, addUserDetails);
-app.get("/user", FBAuth, getAuthenticatedUser);
 
 // Authentication route
 app.post("/signup", signUp);
 app.post("/login", login);
+app.post("/user", FBAuth, addUserDetails);
+app.get("/user", FBAuth, getAuthenticatedUser);
 app.post("/user/image", FBAuth, uploadImage);
 
 exports.api = functions.https.onRequest(app);
