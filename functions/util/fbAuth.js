@@ -1,7 +1,7 @@
 /* eslint-disable consistent-return */
 const { admin, db } = require('./admin'); 
 
-const FBAuth = (req, res, next) => {
+module.exports = (req, res, next) => {
   let idToken;
   if (
     req.headers.authorization &&
@@ -20,7 +20,7 @@ const FBAuth = (req, res, next) => {
       req.user = decodedToken;
       return db
         .collection("users")
-        .where("U serId", "==", req.user.uid)
+        .where("UserId", "==", req.user.uid)
         .limit(1)
         .get();
     })
@@ -33,5 +33,3 @@ const FBAuth = (req, res, next) => {
       return res.status(403).json(err);
     });
 };
-
-module.exports = (FBAuth);
