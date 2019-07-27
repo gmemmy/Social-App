@@ -1,3 +1,4 @@
+/* eslint-disable promise/no-nesting */
 /* eslint-disable consistent-return */
 const { db } = require("../util/admin");
 
@@ -86,17 +87,107 @@ exports.makeANewPost = (req, res) => {
   const newPost = {
     body: req.body.body,
     username: req.user.username,
-    createdAt: new Date().toISOString()
+    userImage: req.user.imageUrl,
+    createdAt: new Date().toISOString(),
+    likeCount: 0,
+    commentCount: 0
   };
   db.collection("posts")
     .add(newPost)
     .then(doc => {
-      return res.json({ message: `document ${doc.id} created succesfully` });
+      const response = newPost;
+      response.postId = doc.id;
+      return res.json(response);
     })
     .catch(err => {
       res.status(500).json({
         error: "Sorry, something went wrong."
       });
       console.error(err);
+    });
+};
+
+exports.likePost = (req, res) => {
+  const likeDocument = db
+    .collection("likes")
+    .where("username", "==", req.user.username)
+    .where("postId", "==", req.params.postId)
+    .limit(1);
+  const postDocument = db.doc(`/posts/${req.params.postId}`);
+  let postData;
+
+  postDocument
+    .get()
+    .then(doc => {
+      if (doc.exists) {
+        postData = doc.data();
+        postData.postId = doc.id;
+        return likeDocument.get();
+      }
+      return res.status(400).json({ error: "Post not found" });
+    })
+    .then(data => {
+      if (data.empty) {
+        return db
+          .collection("likes")
+          .add({
+            postId: req.params.postId,
+            username: req.user.username
+          })
+          .then(() => {
+            postData.likeCount++;
+            return postDocument.update({ likeCount: postData.likeCount });
+          })
+          .then(() => {
+            return res.json(postData);
+          });
+      } else {
+        return res.status(400).json({ error: "Post already liked" });
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: err.code });
+    });
+};
+
+exports.unlikePost = (req, res) => {
+  const likeDocument = db
+    .collection("likes")
+    .where("username", "==", req.user.username)
+    .where("postId", "==", req.params.postId)
+    .limit(1);
+  const postDocument = db.doc(`/posts/${req.params.postId}`);
+  let postData;
+
+  postDocument
+    .get()
+    .then(doc => {
+      if (doc.exists) {
+        postData = doc.data();
+        postData.postId = doc.id;
+        return likeDocument.get();
+      }
+      return res.status(400).json({ error: "Post not found" });
+    })
+    .then(data => {
+      if (data.empty) {
+        return res.status(400).json({ error: "Post not liked" });
+      } else {
+        return db
+          .doc(`/likes/${data.docs[0].id}`)
+          .delete()
+          .then(() => {
+            postData.likeCount--;
+            return postDocument.update({ likeCount: postData.likeCount });
+          })
+          .then(() => {
+            return res.json(postData);
+          });
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      res.status(500).json({ error: err.code });
     });
 };
