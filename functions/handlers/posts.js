@@ -1,3 +1,4 @@
+/* eslint-disable promise/always-return */
 /* eslint-disable promise/no-nesting */
 /* eslint-disable consistent-return */
 const { db } = require("../util/admin");
@@ -110,6 +111,7 @@ exports.makeANewPost = (req, res) => {
     });
 };
 
+// Like a Post
 exports.likePost = (req, res) => {
   const likeDocument = db
     .collection("likes")
@@ -154,6 +156,7 @@ exports.likePost = (req, res) => {
     });
 };
 
+// Unlike a Post
 exports.unlikePost = (req, res) => {
   const likeDocument = db
     .collection("likes")
@@ -194,3 +197,25 @@ exports.unlikePost = (req, res) => {
       res.status(500).json({ error: err.code });
     });
 };
+
+// Delete a Post
+exports.deletePost = (req, res) => {
+  const document = db.doc(`/posts/${req.params.postId}`);
+  document.get()
+  .then(doc => {
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Post not found' });
+    }
+    if (doc.data().username !== req.user.username) {
+      return res.status(403).json({ error: 'Unauthorized! You are not allowed to perform this operation' })
+    }
+    return document.delete();
+  })
+  .then(() => {
+     res.json({ message: 'Post deleted succesfully'});
+  })
+  .catch(err => {
+    console.error(err);
+    return res.status(500).json({ error: err.code });
+  })
+}
