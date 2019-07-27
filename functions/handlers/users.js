@@ -163,6 +163,40 @@ exports.getAuthenticatedUser = (req, res) => {
     });
 };
 
+// Get any user's details
+exports.getUserDetails = (req, res) => {
+  let userData = {};
+  db.doc(`/users/${req.params.username}`).get()
+  .then(doc => {
+    if (doc.exists) {
+      userData.user = doc.data();
+      return db.collection('posts').where('username', '==', req.params.username)
+      .orderBy('createdAt', 'desc').get();
+    } else {
+      return res.status(404).json({ error: 'User not found' });
+    }
+  })
+  .then(data => {
+    userData.posts = [];
+    data.forEach(doc => {
+      userData.posts.push({
+        body: doc.data().body,
+        createdAt: doc.data().createdAt,
+        username: doc.data().username,
+        userImage: doc.data().userImage,
+        likeCount: doc.data().body,
+        commentCount: doc.data().commentCount,
+        postId: doc.id
+      })
+    });
+    return res.json(userData);
+  })
+  .catch(err => {
+    console.error(err);
+    res.status(500).json({ error: err.code })
+  })
+}
+
 // Upload a profile image
 exports.uploadImage = (req, res) => {
   const BusBoy = require("busboy");
@@ -215,3 +249,19 @@ exports.uploadImage = (req, res) => {
   });
   busboy.end(req.rawBody);
 };
+
+exports.markNotificationsRead = (req, res) => {
+  let batch = db.batch();
+  req.body.forEach(notificationId => {
+    const notification = db.doc(`/notifications/${notificationId}`);
+    batch.update(notification, { read: true })
+  });
+  batch.commit()
+  .then(() => {
+    return res.json({ message: 'Notifications marked read' });
+  })
+  .catch(err => {
+    console.error(err);
+    return res.status(500).json({ error: err.code })
+  })
+} 

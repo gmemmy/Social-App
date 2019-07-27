@@ -22,7 +22,9 @@ const {
   login,
   uploadImage,
   addUserDetails,
-  getAuthenticatedUser
+  getAuthenticatedUser,
+  getUserDetails,
+  markNotificationsRead
 } = require("./handlers/users");
 
 // Post routes
@@ -34,11 +36,15 @@ app.get("/post/:postId/like", FBAuth, likePost);
 app.get("/post/:postId/unlike", FBAuth, unlikePost);
 app.delete("/post/:postId", FBAuth, deletePost);
 
-// Authentication route
+// Authentication routes
 app.post("/signup", signUp);
 app.post("/login", login);
+
+// User routes
 app.post("/user", FBAuth, addUserDetails);
 app.get("/user", FBAuth, getAuthenticatedUser);
+app.get("/user/:username", getUserDetails);
+app.post("/notifications", FBAuth, markNotificationsRead);
 app.post("/user/image", FBAuth, uploadImage);
 
 exports.api = functions.https.onRequest(app);
