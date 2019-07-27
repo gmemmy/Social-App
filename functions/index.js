@@ -50,9 +50,10 @@ app.post("/user/image", FBAuth, uploadImage);
 exports.api = functions.https.onRequest(app);
 
 exports.createNotificationOnLike = functions.firestore
-  .document('likes/{id}')
+  .document("likes/{id}")
   .onCreate(snapshot => {
-    return db.doc(`/posts/${snapshot.data().postId}`)
+    return db
+      .doc(`/posts/${snapshot.data().postId}`)
       .get()
       .then(doc => {
         if (doc.exists && doc.data().username !== snapshot.data().username) {
@@ -70,17 +71,19 @@ exports.createNotificationOnLike = functions.firestore
   });
 
 exports.deleteNotificationOnUnlike = functions.firestore
-  .document('likes/{id}')
+  .document("likes/{id}")
   .onDelete(snapshot => {
-    return db.doc(`/notifications/${snapshot.id}`)
+    return db
+      .doc(`/notifications/${snapshot.id}`)
       .delete()
       .catch(err => console.error(err));
   });
 
 exports.createNotificationOnComment = functions.firestore
-  .document('comments/{id}')
+  .document("comments/{id}")
   .onCreate(snapshot => {
-    return db.doc(`/posts/${snapshot.data().postId}`)
+    return db
+      .doc(`/posts/${snapshot.data().postId}`)
       .get()
       .then(doc => {
         if (doc.exists && doc.data().username !== snapshot.data().username) {
@@ -95,4 +98,26 @@ exports.createNotificationOnComment = functions.firestore
         }
       })
       .catch(err => console.error(err));
+  });
+
+exports.onUserImageChange = functions.firestore
+  .document("/users/{userId}")
+  .onUpdate(change => {
+    console.log(change.before.data());
+    console.log(change.after.data());
+    if (change.before.data().imageUrl !== change.after.data().imageUrl) {
+      console.log("Image has changed");
+      let batch = db.batch;
+      return db
+        .collection("screams")
+        .where("username", "==", change.before.data().username)
+        .get()
+        .then(data => {
+          data.forEach(doc => {
+            const post = db.doc(`/posts/${doc.id}`);
+            batch.update(post, { userImage: change.after.data().imageUrl });
+          });
+          return batch.commit();
+        });
+    }
   });
