@@ -52,7 +52,7 @@ exports.api = functions.https.onRequest(app);
 exports.createNotificationOnLike = functions.firestore
   .document('likes/{id}')
   .onCreate(snapshot => {
-    db.doc(`/posts/${snapshot.data().postId}`)
+    return db.doc(`/posts/${snapshot.data().postId}`)
       .get()
       .then(doc => {
         if (doc.exists) {
@@ -66,33 +66,21 @@ exports.createNotificationOnLike = functions.firestore
           });
         }
       })
-      .then(() => {
-        return;
-      })
-      .catch(err => {
-        console.error(err);
-        return;
-      });
+      .catch(err => console.error(err));
   });
 
 exports.deleteNotificationOnUnlike = functions.firestore
   .document('likes/{id}')
   .onDelete(snapshot => {
-    db.doc(`/notifications/${snapshot.id}`)
+    return db.doc(`/notifications/${snapshot.id}`)
       .delete()
-      .then(() => {
-        return;
-      })
-      .catch(err => {
-        console.error(err);
-        return;
-      });
+      .catch(err => console.error(err));
   });
 
 exports.createNotificationOnComment = functions.firestore
   .document('comments/{id}')
   .onCreate(snapshot => {
-    db.doc(`/posts/${snapshot.data().postId}`)
+    return db.doc(`/posts/${snapshot.data().postId}`)
       .get()
       .then(doc => {
         if (doc.exists) {
@@ -106,11 +94,5 @@ exports.createNotificationOnComment = functions.firestore
           });
         }
       })
-      .then(() => {
-        return;
-      })
-      .catch(err => {
-        console.error(err);
-        return;
-      });
+      .catch(err => console.error(err));
   });
