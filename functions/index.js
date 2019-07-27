@@ -107,17 +107,55 @@ exports.onUserImageChange = functions.firestore
     console.log(change.after.data());
     if (change.before.data().imageUrl !== change.after.data().imageUrl) {
       console.log("Image has changed");
-      let batch = db.batch;
+      const batch = db.batch();
       return db
-        .collection("screams")
+        .collection("posts")
         .where("username", "==", change.before.data().username)
         .get()
         .then(data => {
           data.forEach(doc => {
             const post = db.doc(`/posts/${doc.id}`);
             batch.update(post, { userImage: change.after.data().imageUrl });
-          });
+          })
           return batch.commit();
         });
     }
+  });
+
+exports.onPostDelete = functions.firestore
+  .document("/posts/{postId}")
+  .onDelete((snapshot, context) => {
+    const postId = context.params.postId;
+    const batch = db.batch();
+    return db
+      .collection("comments")
+      .where("postId", "==", postId)
+      .get()
+      .then(data => {
+        data.forEach(doc => {
+          batch.delete(db.doc(`/comments/${doc.id}`));
+        });
+        return db
+          .collection("likes")
+          .where("postId", "==", postId)
+          .get();
+      })
+      .then(data => {
+        data.forEach(doc => {
+          batch.delete(db.doc(`/likes/${doc.id}`));
+        });
+        return db
+          .collection("notifications")
+          .where("postId", "==", postId)
+          .get();
+      })
+      .then(data => {
+        data.forEach(doc => {
+          batch.delete(db.doc(`/notifications/${doc.id}`));
+        });
+        return batch.commit();
+      })
+      .catch(err => {
+        console.error(err);
+      });
   });
