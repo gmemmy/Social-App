@@ -23,7 +23,7 @@ exports.signUp = (req, res) => {
   };
 
   const { valid, errors } = validateSignup(newUser);
-  if (!valid) return res.status(400).json({ errors });
+  if (!valid) return res.status(400).json(errors);
 
   const noImg = "no-img.png";
 
@@ -78,7 +78,7 @@ exports.login = (req, res) => {
     password: req.body.password
   };
   const { valid, errors } = validateLogin(user);
-  if (!valid) return res.status(400).json({ errors });
+  if (!valid) return res.status(400).json(errors);
 
   firebase
     .auth()
@@ -177,7 +177,7 @@ exports.getUserDetails = (req, res) => {
         createdAt: doc.data().createdAt,
         username: doc.data().username,
         userImage: doc.data().userImage,
-        likeCount: doc.data().body,
+        likeCount: doc.data().likeCount,
         commentCount: doc.data().commentCount,
         postId: doc.id
       })
