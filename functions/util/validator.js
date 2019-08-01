@@ -51,6 +51,17 @@ exports.validateLogin = data => {
   };
 };
 
+exports.validateNewPost = data => {
+  let errors = {};
+  if (isEmpty(data.body)) {
+    errors.body = "Must not be empty";
+  }
+  return {
+    errors,
+    valid: Object.keys(errors).length === 0 ? true : false
+  };
+}
+
 exports.reduceUserDetails = data => {
   let userDetails = {};
 

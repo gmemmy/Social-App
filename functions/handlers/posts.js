@@ -2,6 +2,7 @@
 /* eslint-disable promise/no-nesting */
 /* eslint-disable consistent-return */
 const { db } = require("../util/admin");
+const { validateNewPost } = require("../util/validator");
 
 exports.getAllPosts = (req, res) => {
   db.collection("posts")
@@ -99,6 +100,8 @@ exports.makeANewPost = (req, res) => {
     likeCount: 0,
     commentCount: 0
   };
+  const { valid, errors } = validateNewPost(newPost);
+  if (!valid) return res.status(400).json(errors);
   db.collection("posts")
     .add(newPost)
     .then(doc => {
