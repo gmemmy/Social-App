@@ -27,6 +27,16 @@ let db = {
       body: "You look good mate!!",
       createdAt: "2019-07-25T12:48:07.099Z"
     }
+  ],
+  notifications: [
+    {
+      recipient: 'binsh',
+      sender: 'John',
+      read: 'true | false',
+      postId: "brhbf47r74bf",
+      type: 'like | comment',
+      createdAt: '2019-07-23T14:06:57.113Z'
+    }
   ]
 };
 
